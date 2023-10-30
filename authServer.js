@@ -10,7 +10,7 @@ const PORT = process.env.AUTH_SERVER_PORT;
 app.use(express.json());
 
 //Refresh Tokens
-const refreshTokens = [];
+let refreshTokens = [];
 
 //Routes
 app.post("/login", (req, res) => {
@@ -28,18 +28,23 @@ app.post("/login", (req, res) => {
 app.post("/token", (req, res) => {
   const refreshToken = req.body.token;
   if (!refreshToken) return res.status(401).send();
-  if (!refreshTokens.includes(refreshToken)) return res.status(403).send();
-  //Check for valid refresh token & create new access token
-  try {
-    const user = verifyRefreshToken(refreshToken);
-    const accessToken = createAccessToken(user);
-    res.json({ accessToken });
-  } catch (error) {
-    res.status(403).send();
+  if (refreshTokens.includes(refreshToken)) {
+    try {
+      const { user } = verifyRefreshToken(refreshToken);
+      const accessToken = createAccessToken({ user });
+      return res.json({ accessToken });
+    } catch (error) {
+      return res.status(403).send();
+    }
   }
+  return res.sendStatus(403);
 });
 
-app.delete("/logout", (req, res) => {});
+app.delete("/logout", (req, res) => {
+  if (!req.body.token) return res.sendStatus(400);
+  refreshTokens = refreshTokens.filter((e) => e !== req.body.token);
+  res.sendStatus(200);
+});
 
 app.listen(PORT, () => {
   console.log(`Server listening at port: ${PORT}`);

@@ -14,24 +14,23 @@ const data = [
 
 //Routes
 app.get("/protected", authenticate, (req, res) => {
-  const userdata = data.filter((e) => e.user === req.user);
-  res.status(200).json({ ...userdata.content });
+  const { user } = req.user;
+  const userdata = data.filter((e) => e.user === user);
+  res.status(200).json({ ...userdata[0].content });
 });
 
-async function authenticate(req, res, next) {
+function authenticate(req, res, next) {
   //Extract Token from Header
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   if (token == null) return res.sendStatus(401);
-
-  //Check Access Token
   try {
-    const user = await verifyAccessToken(token);
+    //Check Access Token
+    const user = verifyAccessToken(token);
     //Append user to request
-    console.log(user);
-    //req.user = user;
+    req.user = user;
   } catch (error) {
-    res.status(403).send();
+    return res.status(403).send(error);
   }
   next();
 }
